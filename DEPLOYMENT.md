@@ -5,74 +5,85 @@
 1. **Cấu hình Axios**: Đã sửa để sử dụng BASE_URL thay vì hardcode localhost
 2. **Cấu hình CORS**: Đã cập nhật để hỗ trợ production
 3. **Biến môi trường**: Đã sửa tên biến MONGODB_URI
+4. **Module type**: Đã đồng nhất type module giữa các package.json
 
 ## Các bước deploy
 
-### 1. Chuẩn bị Backend
+### 1. Chuẩn bị MongoDB Atlas
 
-Tạo file `.env` trong thư mục `Backend/` với nội dung:
+1. Truy cập https://cloud.mongodb.com
+2. Tạo cluster miễn phí
+3. Tạo database user với username/password
+4. Whitelist IP addresses (0.0.0.0/0 cho tất cả IP)
+5. Lấy connection string: `mongodb+srv://username:password@cluster.mongodb.net/todox`
 
-```env
-# Database
+### 2. Deploy trên Render.com
+
+#### Cấu hình Render:
+1. **Repository**: Kết nối GitHub repository `HuynhPPP/hpCode_todoXApp`
+2. **Root Directory**: Để trống (sử dụng root của repo)
+3. **Build Command**: `npm run build`
+4. **Start Command**: `npm start`
+5. **Node Version**: 18.x hoặc 20.x
+
+#### Biến môi trường trên Render:
+Vào **Environment** tab và thêm:
+
+```
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/todox
-
-# Server
-PORT=5001
 NODE_ENV=production
-
-# CORS (tùy chọn - nếu không set sẽ allow all origins)
-FRONTEND_URL=https://your-frontend-domain.com
+PORT=5001
 ```
 
-### 2. Build Frontend
+**⚠️ QUAN TRỌNG**: Thay `username`, `password`, và `cluster` bằng thông tin thực từ MongoDB Atlas của bạn!
 
-```bash
-cd Frontend
-npm run build
-```
+### 3. Khắc phục lỗi "Connected to MongoDB failed"
 
-### 3. Deploy Backend
+Nếu vẫn gặp lỗi này, kiểm tra:
 
-#### Với Render.com:
-1. Kết nối repository GitHub
-2. Chọn thư mục `Backend` làm root directory
-3. Set build command: `npm install`
-4. Set start command: `npm start`
-5. Thêm các biến môi trường trong dashboard
+1. **Biến môi trường đã được set chưa**:
+   - Vào Render Dashboard → Environment
+   - Đảm bảo có `MONGODB_URI` với connection string đúng
 
-#### Với Heroku:
-```bash
-cd Backend
-heroku create your-app-name
-heroku config:set NODE_ENV=production
-heroku config:set MONGODB_URI=your-mongodb-connection-string
-git subtree push --prefix Backend heroku main
-```
+2. **Connection string đúng format**:
+   ```
+   mongodb+srv://username:password@cluster.mongodb.net/todox?retryWrites=true&w=majority
+   ```
 
-### 4. Deploy Frontend
+3. **MongoDB Atlas Network Access**:
+   - Vào MongoDB Atlas → Network Access
+   - Thêm IP `0.0.0.0/0` để allow tất cả IP
 
-#### Với Vercel/Netlify:
-1. Kết nối repository
-2. Set build command: `cd Frontend && npm run build`
-3. Set output directory: `Frontend/dist`
-4. Set root directory: `Frontend`
+4. **Database User**:
+   - Tạo user với quyền `Read and write to any database`
 
-### 5. Cấu hình Database
+### 4. Test deployment
 
-Sử dụng MongoDB Atlas (miễn phí):
-1. Tạo cluster tại https://cloud.mongodb.com
-2. Tạo database user
-3. Whitelist IP addresses (0.0.0.0/0 cho tất cả)
-4. Lấy connection string và thêm vào biến môi trường
-
-## Kiểm tra sau khi deploy
-
-1. Backend API: `https://your-backend-url.com/api/tasks`
-2. Frontend: `https://your-frontend-url.com`
+Sau khi deploy thành công:
+1. **Backend API**: `https://your-render-app.onrender.com/api/tasks`
+2. **Frontend**: `https://your-render-app.onrender.com`
 3. Kiểm tra console để đảm bảo không có lỗi CORS
+
+## Troubleshooting
+
+### Lỗi thường gặp:
+
+1. **"Connected to MongoDB failed"**:
+   - Kiểm tra biến môi trường `MONGODB_URI`
+   - Kiểm tra MongoDB Atlas Network Access
+   - Kiểm tra username/password
+
+2. **"ERR_CONNECTION_REFUSED"**:
+   - Đã được sửa bằng cách cập nhật axios config
+   - Frontend sẽ sử dụng relative path `/api`
+
+3. **CORS errors**:
+   - Đã được sửa bằng cách cập nhật CORS config
+   - Backend sẽ allow tất cả origins trong production
 
 ## Lưu ý quan trọng
 
+- Render free tier sẽ sleep sau 15 phút không hoạt động
+- Lần đầu truy cập có thể mất 30-50 giây để wake up
 - Đảm bảo NODE_ENV=production khi deploy
 - Frontend sẽ tự động sử dụng relative path `/api` thay vì localhost
-- CORS đã được cấu hình để hoạt động với production
