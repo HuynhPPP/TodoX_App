@@ -15,9 +15,15 @@ const app = express();
 // Middleware
 app.use(express.json());
 
-if (process.env.NODE_ENV !== "production") {
-  app.use(cors({ origin: 'http://localhost:5173' }));
-}
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === "production" 
+    ? process.env.FRONTEND_URL || true  // Allow all origins in production if FRONTEND_URL not set
+    : process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 
 app.use('/api/tasks', tasksRouter);
 
